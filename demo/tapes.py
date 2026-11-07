@@ -94,33 +94,25 @@ Sleep 3s
 Sleep 1s
 Ctrl+S
 Sleep 1.5s
+Ctrl+S
+Sleep 2.2s
+Type "f"
+Sleep 3s
+Ctrl+S
+Sleep 1.5s
 Tab
 Sleep 1.5s
 Ctrl+D
 Sleep 1.2s
 Ctrl+D
 Sleep 1.2s
-Ctrl+D
-Sleep 1.2s
-Ctrl+U
-Sleep 1.2s
 Ctrl+U
 Sleep 1.5s
 Ctrl+S
-Sleep 2s
+Sleep 2.2s
 Screenshot {out}/jump-labels.png
-Type "g"
-Sleep 1.5s
-Ctrl+S
-Sleep 1.5s
-Type "d"
-Sleep 1.5s
-Shift+Tab
-Sleep 1.5s
-Ctrl+S
-Sleep 2s
-Type "f"
-Sleep 2s
+Type "s"
+Sleep 3s
 """),
     "message": ("default", """
 Sleep 1s
