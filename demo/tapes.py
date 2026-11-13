@@ -85,7 +85,7 @@ Tab
 Sleep 500ms
 Tab
 Sleep 2.5s
-Ctrl+A
+Ctrl+G
 Sleep 2s
 Tab
 Sleep 3s

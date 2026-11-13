@@ -22,6 +22,8 @@ interface PersistedState {
   pins: string[]
   /** Pins were copied from the built-in session list. */
   seeded: boolean
+  /** The list shows every project's sessions. Unset until toggled here: the built-in list's choice applies. */
+  allProjects?: boolean
 }
 
 const JOB_POLL_MS = 4_000
@@ -298,6 +300,12 @@ export function createInbox(context: Context, options: Options) {
     })
   }
 
+  function setAllProjects(value: boolean) {
+    return write((draft) => {
+      draft.allProjects = value
+    })
+  }
+
   const pins = () => state.pins ?? []
   function isPinned(id: string) {
     return pins().includes(id)
@@ -415,6 +423,7 @@ export function createInbox(context: Context, options: Options) {
     pins,
     isPinned,
     togglePin,
+    setAllProjects,
     slots,
     quickSwitch,
   }

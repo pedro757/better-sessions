@@ -17,7 +17,7 @@ import {
   Switch,
   untrack,
 } from "solid-js"
-import { readCliConfig, type Options } from "./config"
+import { readCliConfig, readHostAllProjects, type Options } from "./config"
 import type { Inbox } from "./inbox"
 import {
   compareActive,
@@ -67,6 +67,9 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
   const animations = config.animations ?? true
   const keys = props.options.keybinds
   const halfPageKeys = { down: keys.halfPageDown, up: keys.halfPageUp }
+  // Every project's sessions, or the current directory's. Follows the built-in list's choice until toggled here.
+  const hostAllProjects = readHostAllProjects(context.app.channel, config)
+  const allProjects = () => inbox.state.allProjects ?? hostAllProjects
 
   const [view, setView] = createSignal<View>(
     props.start ? { type: "snooze", sessionID: props.start.sessionID, standalone: true } : { type: "list" },
@@ -117,19 +120,20 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
   const autoSettleMs = props.options.autoSettleAfterDays ? props.options.autoSettleAfterDays * 24 * 60 * 60 * 1_000 : null
 
   const [searchResults, { mutate: setSearchResults }] = createResource(
-    () => ({ query: search().trim(), location: pickerLocation() }),
-    async ({ query, location }) => {
+    () => ({ query: search().trim(), location: pickerLocation(), allProjects: allProjects() }),
+    async ({ query, location, allProjects }) => {
       try {
-        const current = await resolveLocation(location)
-        if (!current) throw new Error("Location unavailable")
-        // Always the current directory, like the built-in list's default scope.
-        const scope =
-          current.project.id === "global"
+        const scope = await (async () => {
+          if (allProjects) return {}
+          const current = await resolveLocation(location)
+          if (!current) throw new Error("Location unavailable")
+          return current.project.id === "global"
             ? { directory: current.directory }
             : {
                 project: current.project.id,
                 subpath: path.relative(current.project.directory, current.directory).replaceAll("\\", "/"),
               }
+        })()
         const sessions: SessionInfo[] = []
         let cursor: string | undefined
         for (let page = 0; page < (query ? 1 : MAX_PAGES); page++) {
@@ -149,10 +153,10 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
           const oldest = response.data.at(-1)!.time.updated
           if (autoSettleMs !== null && oldest < Date.now() - autoSettleMs) break
         }
-        return { query, sessions, error: undefined as unknown }
+        return { query, allProjects, sessions, error: undefined as unknown }
       } catch (error) {
         // A transient transport failure must degrade search, not crash the TUI.
-        return { query, sessions: [] as SessionInfo[], error: error as unknown }
+        return { query, allProjects, sessions: [] as SessionInfo[], error: error as unknown }
       }
     },
   )
@@ -170,7 +174,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
         (session) =>
           !session.parentID &&
           session.time.archived === undefined &&
-          inScope(session) &&
+          (allProjects() || inScope(session)) &&
           (!query || sessionTitle(session).toLowerCase().includes(query)),
       )
   })
@@ -183,8 +187,9 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
       if (live.time.archived !== undefined) return
       byID.set(session.id, live)
     }
+    // Results fetched for the other scope would show the wrong sessions until the new fetch lands.
     const result = searchResults.latest
-    if (result && !result.error) result.sessions.forEach(add)
+    if (result && !result.error && result.allProjects === allProjects()) result.sessions.forEach(add)
     localSessions().forEach(add)
     return [...byID.values()]
   })
@@ -235,6 +240,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
 
   const pinsEnabled = () => !context.ui.tabs.enabled()
   const deleteKey = () => context.keymap.shortcuts("better_sessions.delete")[0] ?? keys.delete
+  const allProjectsKey = () => context.keymap.shortcuts("better_sessions.all_projects")[0] ?? keys.allProjects
 
   const currentProjectName = createMemo(() => {
     const current = currentInfo()
@@ -431,6 +437,16 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
       bind: keys.previousTab,
       run: () => cycle(-1),
     },
+    {
+      id: "better_sessions.all_projects",
+      title: allProjects() ? "Show current directory sessions" : "Show all project sessions",
+      group: "Dialog",
+      bind: keys.allProjects,
+      run: () => {
+        setToDelete(undefined)
+        void inbox.setAllProjects(!allProjects())
+      },
+    },
   ])
 
   const tabsView = () => (
@@ -502,7 +518,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
               <text fg={theme().text.base} attributes={TextAttributes.BOLD}>
                 Sessions
               </text>
-              <Show when={currentProjectName()}>
+              <Show when={!allProjects() && currentProjectName()}>
                 <text fg={theme().text.muted}> for {currentProjectName()}</text>
               </Show>
             </box>
@@ -531,6 +547,9 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
             context.ui.dialog.clear()
           }}
           actions={actions()}
+          footerHints={[
+            { title: allProjects() ? "current directory" : "all projects", label: allProjectsKey(), side: "right" },
+          ]}
           halfPageKeys={halfPageKeys}
           jumpKey={keys.jump}
         />
