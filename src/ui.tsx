@@ -132,8 +132,9 @@ export function Spinner(props: { color: RGBA; animations: boolean }) {
 export const WOKE_MARKER = "⏰"
 
 /**
- * The TUI's `sessionStatusGutter`: "!" for permissions, "?" for questions, then "⏰" for a snooze that ended, then a
- * spinner while working. The alarm clock is a wide glyph, so it reports a width of 2 cells for the row to make room.
+ * The TUI's `sessionStatusGutter`, plus the snooze marker: "⏰" for a snooze that ended and has not been opened yet,
+ * which wins over the rest, then "!" for permissions, "?" for questions, then a spinner while working. The alarm clock
+ * is a wide glyph, so it reports a width of 2 cells for the row to make room.
  */
 export function statusGutter(
   theme: DialogTheme,
@@ -142,6 +143,7 @@ export function statusGutter(
   fallback?: () => JSX.Element,
 ): { gutter?: (color: RGBA) => JSX.Element; gutterWidth?: number } {
   const { attention } = status
+  if (status.woke) return { gutter: () => <text>{WOKE_MARKER}</text>, gutterWidth: 2 }
   if (attention) {
     return {
       gutter: (color: RGBA) => (
@@ -154,7 +156,6 @@ export function statusGutter(
       ),
     }
   }
-  if (status.woke) return { gutter: () => <text>{WOKE_MARKER}</text>, gutterWidth: 2 }
   if (status.working) return { gutter: (color: RGBA) => <Spinner color={color} animations={animations} /> }
   return { gutter: fallback }
 }

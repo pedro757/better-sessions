@@ -60,7 +60,8 @@ jobs and subagents don't count, and neither do the goal plugin's own compactions
 
 ### Snoozes wake up
 
-A snooze ends at its time, with a toast and a ⏰ in the status gutter in Active until you open the session. It also ends
+A snooze ends at its time, with a toast and a ⏰ in the status gutter in Active until you open the session (it
+shows instead of `!`/`?` when the session is also waiting on you). It also ends
 early when the session asks for a permission, asks a new question, or fails. This follows t3code's rules: a
 question that was already pending when you snoozed does not wake it, and a session that keeps working in the
 background stays snoozed.
