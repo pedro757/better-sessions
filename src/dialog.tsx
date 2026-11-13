@@ -260,11 +260,9 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
       const relative = path.relative(project?.canonical ?? root, root)
       const worktree =
         relative.startsWith("..") || path.isAbsolute(relative) ? truncate(path.basename(relative), 25) : undefined
-      const footer = [
-        placement.until !== undefined ? snoozeTimeLeft(placement.until, at) : undefined,
-        placement.woke ? "woke" : undefined,
-        worktree,
-      ].filter(Boolean)
+      const footer = [placement.until !== undefined ? snoozeTimeLeft(placement.until, at) : undefined, worktree].filter(
+        Boolean,
+      )
       const slot = pinsEnabled() ? slotByID.get(session.id) : undefined
       const deleting = toDelete() === session.id
       return {
@@ -272,13 +270,11 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
         value: session.id,
         category,
         footer: footer.length ? footer.join(" · ") : undefined,
-        footerColor: placement.woke ? dialogTheme.text.feedback.warning.base : undefined,
         bg: deleting ? dialogTheme.background.action.destructive.focused : undefined,
         fg: deleting ? dialogTheme.text.action.destructive.focused : undefined,
-        gutter: statusGutter(
+        ...statusGutter(
           dialogTheme,
-          signals.attention,
-          !signals.attention && signals.working,
+          { attention: signals.attention, woke: !!placement.woke, working: signals.working },
           animations,
           slot === undefined ? undefined : () => <text fg={dialogTheme.hue.accent[200]}>{slot}</text>,
         ),

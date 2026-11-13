@@ -52,13 +52,15 @@ The same actions are in the command palette for the session you are in: "Settle 
 
 ### Sending a message brings a session back
 
-Sending a message to a settled or snoozed session moves it back to Active.
+Sending a message to a settled or snoozed session moves it back to Active. So do `/compact` and a `!` shell
+command typed in its prompt. This also covers sessions that settled by themselves after 7 days. Results of background
+jobs and subagents don't count, and neither do the goal plugin's own compactions.
 
 ![Sending a message](https://raw.githubusercontent.com/pedro757/better-sessions/main/media/message.gif)
 
 ### Snoozes wake up
 
-A snooze ends at its time, with a toast and a `woke` marker in Active until you open the session. It also ends
+A snooze ends at its time, with a toast and a ⏰ in the status gutter in Active until you open the session. It also ends
 early when the session asks for a permission, asks a new question, or fails. This follows t3code's rules: a
 question that was already pending when you snoozed does not wake it, and a session that keeps working in the
 background stays snoozed.
@@ -101,7 +103,7 @@ how many are waiting on you.
 
 ## Install
 
-Built and tested on OpenCode 2.2.6.
+Built on OpenCode 2.2.6 and tested on 2.3.0.
 
 ```sh
 git clone https://github.com/pedro757/better-sessions ~/.config/opencode/plugins/better-sessions

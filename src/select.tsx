@@ -44,6 +44,8 @@ export interface SelectOption<T> {
   bg?: RGBA
   fg?: RGBA
   gutter?: (color: RGBA) => JSX.Element
+  /** Cells the gutter takes; a wide glyph (2) shifts it left so the title stays aligned. Defaults to 1. */
+  gutterWidth?: number
 }
 
 type ActionBase<T> = {
@@ -747,12 +749,14 @@ function Row<T>(props: {
   })
   const secondary = () => (props.active ? text() : theme().text.muted)
   const marked = () => props.label !== undefined || props.current || props.option.gutter !== undefined
+  // A jump label covers the gutter and is always one cell wide.
+  const markerWidth = () => (props.label === undefined && props.option.gutter ? (props.option.gutterWidth ?? 1) : 1)
   return (
-    // A marker or gutter takes its cell plus the row gap out of the left padding,
+    // A marker or gutter takes its cells plus the row gap out of the left padding,
     // so titles line up with unmarked rows: scroll pad (1) + marker (1) + gap (1).
     <box
       flexDirection="row"
-      paddingLeft={marked() ? DIALOG_LIST_INSET - 3 : DIALOG_LIST_INSET - 1}
+      paddingLeft={marked() ? Math.max(0, DIALOG_LIST_INSET - 2 - markerWidth()) : DIALOG_LIST_INSET - 1}
       paddingRight={DIALOG_LIST_INSET - 1}
       gap={1}
       backgroundColor={props.active ? (props.option.bg ?? theme().background.action.primary.focused) : transparent}

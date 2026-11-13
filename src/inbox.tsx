@@ -4,6 +4,7 @@ import { createMemo, createSignal, onCleanup, untrack } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { readHostPins, type Options } from "./config"
 import {
+  engagedBy,
   place,
   settleBlocker,
   snoozeBlocker,
@@ -272,11 +273,20 @@ export function createInbox(context: Context, options: Options) {
     }
   }
 
-  /** The user wrote to the session: it is being worked on again, whatever its tab was. */
+  /**
+   * The user acted on the session (a message, `/compact`, a `!` command): it is being worked on again, whatever its
+   * tab was. The entry records that moment, so a session that settled by itself after days of inactivity comes back
+   * too, even when the action does not touch the session's own timestamps.
+   */
   function engage(id: string) {
-    if (!state.sessions?.[id]) return
+    const current = state.sessions?.[id]
+    const session = data.session.get(id)
+    // Already in Active with no marker: nothing to record.
+    if (session ? placement(session).tab === "active" && !(current?.state === "active" && current.woke) : !current)
+      return
+    setNow(Date.now())
     void write((draft) => {
-      delete draft.sessions[id]
+      draft.sessions[id] = { state: "active", at: Date.now() }
     })
   }
 
@@ -363,12 +373,16 @@ export function createInbox(context: Context, options: Options) {
   const disposers: Array<() => void> = []
   disposers.push(
     data.on("session.inbox.enqueued", (event) => {
-      // Only a message to the tracked root itself counts: subagent prompts are user items on children.
-      if (event.data.item.type !== "user") return
-      engage(event.data.sessionID)
+      // Only input for the tracked root itself counts: subagent prompts are user items on children.
+      const id = event.data.sessionID
+      if (engagedBy(event.data.item.type, data.session.status(id) === "running")) engage(id)
     }),
     data.on("session.deleted", (event) => forget(event.data.sessionID)),
-    data.on("session.shell.started", () => watchers > 0 && void refreshJobs()),
+    data.on("session.shell.started", (event) => {
+      // Only the user's own `!` commands publish this; the agent's shell tool runs as a background job.
+      engage(event.data.sessionID)
+      if (watchers > 0) void refreshJobs()
+    }),
     data.on("session.shell.ended", () => watchers > 0 && void refreshJobs()),
     data.on("session.execution.succeeded", () => watchers > 0 && void refreshJobs()),
     data.on("session.execution.started", () => watchers > 0 && void refreshJobs()),
