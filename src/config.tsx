@@ -142,8 +142,10 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   halfPageDown: "ctrl+d",
   halfPageUp: "ctrl+u",
   jump: "ctrl+s",
-  // Terminals report "?" as "?", "shift+?" or "shift+/"; OpenCode's diff viewer binds all three.
-  help: "?,shift+?,shift+/",
+  // Terminals report "?" as "?", "shift+?" or "shift+/"; OpenCode's diff viewer binds all three. "?" types into a
+  // search that is not empty, so ctrl+/ opens help at any time. Without the kitty keyboard protocol (e.g. in tmux)
+  // terminals send ctrl+/ as ctrl+_.
+  help: "?,shift+?,shift+/,ctrl+/,ctrl+_",
   nextTab: "tab",
   previousTab: "shift+tab",
 }

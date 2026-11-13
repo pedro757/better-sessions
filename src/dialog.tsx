@@ -249,11 +249,15 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
    * appear as they are bound. Actions hidden on the current tab stay registered (disabled), so they are listed too.
    */
   function keybindingGroups(): HelpGroup[] {
-    const keysOf = (id: string, first = false) => {
-      const list = context.keymap.shortcuts(id)
-      return (first ? list.slice(0, 1) : list).join(", ")
+    // Spellings of the same key that some terminals send, bound only so the key works everywhere.
+    const variants = new Set(["shift+?", "shift+/", "ctrl+_"])
+    const keysOf = (id: string) => {
+      // Ids the host also registers (session.rename inside a session, for one) report their keys once per layer.
+      const list = [...new Set(context.keymap.shortcuts(id))]
+      const shown = list.filter((key) => !variants.has(key))
+      return (shown.length ? shown : list).join(", ")
     }
-    const row = (id: string, label: string, first = false) => ({ keys: keysOf(id, first), label })
+    const row = (id: string, label: string) => ({ keys: keysOf(id), label })
     return [
       {
         title: "Selected session",
@@ -275,7 +279,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
           row("better_sessions.all_projects", "All projects / current directory"),
           row("better_sessions.jump", "Jump to a row (type its label)"),
           { keys: "type", label: "Search" },
-          row("better_sessions.help", "Keybindings (this view)", true),
+          row("better_sessions.help", "Keybindings (this view)"),
           { keys: "esc", label: "Close the list" },
         ],
       },
@@ -501,7 +505,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
       group: "Dialog",
       bind: keys.help,
       run: (_input, event) => {
-        // While searching, "?" is part of the query.
+        // While searching, "?" is part of the query; ctrl+/ still opens help.
         if (filter() && event && typedCharacter(event) !== undefined) return false
         openHelp()
       },
@@ -617,7 +621,7 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
           }}
           actions={actions()}
           actionHints={false}
-          footerHints={[{ title: "keybindings", label: helpKey(), side: "left" }]}
+          footerHints={[{ title: "keybindings", label: helpKey(), side: "right" }]}
           halfPageKeys={halfPageKeys}
           jumpKey={keys.jump}
         />

@@ -118,9 +118,9 @@ session" palette entry or `/sessions`. Disable it with `"-better-sessions"` in `
 
 ## Keys
 
-The footer only shows `keybindings ?`. Press `?` (with the search empty; in a search it types a `?`) to see every
-key the list answers to, as currently bound, so keys you changed in cli.json show up there. `esc` or `?` goes back
-to the list.
+The footer only shows `keybindings ?`. Press `?` with the search empty, or `ctrl+/` at any time (in a search, `?`
+types a `?`), to see every key the list answers to, as currently bound, so keys you changed in cli.json show up
+there. `esc`, `?` or `ctrl+/` goes back to the list.
 
 | Key                     | In the list                                     | Option                        |
 | ----------------------- | ----------------------------------------------- | ----------------------------- |
@@ -133,7 +133,7 @@ to the list.
 | `ctrl+r`                | Rename                                          | `session.rename` keybind      |
 | `ctrl+f`                | Pin / unpin                                     | `session.pin.toggle` keybind  |
 | `ctrl+s`, then a label  | Open the labeled session                        | `jump`                        |
-| `?`                     | Keybindings                                     | `help`                        |
+| `?` or `ctrl+/`         | Keybindings                                     | `help`                        |
 | `ctrl+d` / `ctrl+u`     | Half page down / up                             | `halfPageDown` / `halfPageUp` |
 | `return`                | Open the session                                |                               |
 | `esc`                   | Cancel jump labels, or close                    |                               |
@@ -166,7 +166,7 @@ without configuration; add an entry only to change options:
           "allProjects": "ctrl+a",
           "delete": "ctrl+x",
           "jump": "ctrl+s",
-          "help": "?,shift+?,shift+/",
+          "help": "?,shift+?,shift+/,ctrl+/,ctrl+_",
           "halfPageDown": "ctrl+d",
           "halfPageUp": "ctrl+u",
           "nextTab": "tab",
