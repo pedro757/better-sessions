@@ -242,7 +242,16 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
 
   const pinsEnabled = () => !context.ui.tabs.enabled()
   const deleteKey = () => context.keymap.shortcuts("better_sessions.delete")[0] ?? keys.delete
-  const helpKey = () => context.keymap.shortcuts("better_sessions.help")[0] ?? "?"
+  const helpKey = () => {
+    const bound = [...new Set(context.keymap.shortcuts("better_sessions.help"))]
+    // With a search in place a plain "?" types into it, so the hint shows a key that still opens help (ctrl+/).
+    if (filter()) {
+      const types = (key: string) => [...key.replace(/^shift\+/, "")].length === 1
+      const always = bound.find((key) => !types(key) && key !== "ctrl+_")
+      if (always) return always
+    }
+    return bound[0] ?? "?"
+  }
 
   /**
    * Every key the list answers to, read from the keymap while the list is showing, so custom keys from cli.json

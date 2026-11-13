@@ -118,9 +118,9 @@ session" palette entry or `/sessions`. Disable it with `"-better-sessions"` in `
 
 ## Keys
 
-The footer only shows `keybindings ?`. Press `?` with the search empty, or `ctrl+/` at any time (in a search, `?`
-types a `?`), to see every key the list answers to, as currently bound, so keys you changed in cli.json show up
-there. `esc`, `?` or `ctrl+/` goes back to the list.
+The footer only shows `keybindings ?`, or `keybindings ctrl+/` while a search is in place. Press `?` with the search
+empty, or `ctrl+/` at any time (in a search, `?` types a `?`), to see every key the list answers to, as currently
+bound, so keys you changed in cli.json show up there. `esc`, `?` or `ctrl+/` goes back to the list.
 
 | Key                     | In the list                                     | Option                        |
 | ----------------------- | ----------------------------------------------- | ----------------------------- |
