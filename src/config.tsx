@@ -116,6 +116,7 @@ export interface Keybinds {
   readonly halfPageDown: string
   readonly halfPageUp: string
   readonly jump: string
+  readonly help: string
   readonly nextTab: string
   readonly previousTab: string
 }
@@ -141,6 +142,8 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   halfPageDown: "ctrl+d",
   halfPageUp: "ctrl+u",
   jump: "ctrl+s",
+  // Terminals report "?" as "?", "shift+?" or "shift+/"; OpenCode's diff viewer binds all three.
+  help: "?,shift+?,shift+/",
   nextTab: "tab",
   previousTab: "shift+tab",
 }
@@ -171,6 +174,7 @@ export function parseOptions(input: Readonly<Record<string, unknown>>): Options 
       halfPageDown: key("halfPageDown"),
       halfPageUp: key("halfPageUp"),
       jump: key("jump"),
+      help: key("help"),
       nextTab: key("nextTab"),
       previousTab: key("previousTab"),
     },

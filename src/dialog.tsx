@@ -32,7 +32,8 @@ import {
   type Signals,
   type Tab,
 } from "./model"
-import { Select, type SelectAction, type SelectOption } from "./select"
+import { KeybindingsHelp, type HelpGroup } from "./help"
+import { Select, typedCharacter, type SelectAction, type SelectOption } from "./select"
 import { formatWake, pickSnoozePreset, resolveCustomSnooze, resolveSnoozePresets, snoozeTimeLeft } from "./snooze"
 import { DIALOG_LIST_INSET, Prompt, statusGutter, useDialogTheme } from "./ui"
 import { createDebouncedSignal, errorMessage, projectName, sessionTitle, truncate } from "./util"
@@ -46,6 +47,7 @@ type View =
   | { readonly type: "snooze"; readonly sessionID: string; readonly standalone?: boolean }
   | { readonly type: "custom"; readonly sessionID: string; readonly standalone?: boolean; readonly error?: string }
   | { readonly type: "rename"; readonly sessionID: string; readonly title: string; readonly error?: string }
+  | { readonly type: "help"; readonly groups: readonly HelpGroup[] }
 
 type Row = { session: SessionInfo; signals: Signals; placement: Placement }
 
@@ -240,7 +242,63 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
 
   const pinsEnabled = () => !context.ui.tabs.enabled()
   const deleteKey = () => context.keymap.shortcuts("better_sessions.delete")[0] ?? keys.delete
-  const allProjectsKey = () => context.keymap.shortcuts("better_sessions.all_projects")[0] ?? keys.allProjects
+  const helpKey = () => context.keymap.shortcuts("better_sessions.help")[0] ?? "?"
+
+  /**
+   * Every key the list answers to, read from the keymap while the list is showing, so custom keys from cli.json
+   * appear as they are bound. Actions hidden on the current tab stay registered (disabled), so they are listed too.
+   */
+  function keybindingGroups(): HelpGroup[] {
+    const keysOf = (id: string, first = false) => {
+      const list = context.keymap.shortcuts(id)
+      return (first ? list.slice(0, 1) : list).join(", ")
+    }
+    const row = (id: string, label: string, first = false) => ({ keys: keysOf(id, first), label })
+    return [
+      {
+        title: "Selected session",
+        rows: [
+          row("dialog.select.submit", "Open"),
+          row("better_sessions.settle", "Settle"),
+          row("better_sessions.snooze", "Snooze…"),
+          row("better_sessions.restore", "Restore to Active"),
+          ...(pinsEnabled() ? [row("session.pin.toggle", "Pin / unpin")] : []),
+          row("session.rename", "Rename"),
+          row("better_sessions.delete", "Delete (press twice)"),
+        ],
+      },
+      {
+        title: "List",
+        rows: [
+          row("better_sessions.tab.next", "Next tab"),
+          row("better_sessions.tab.previous", "Previous tab"),
+          row("better_sessions.all_projects", "All projects / current directory"),
+          row("better_sessions.jump", "Jump to a row (type its label)"),
+          { keys: "type", label: "Search" },
+          row("better_sessions.help", "Keybindings (this view)", true),
+          { keys: "esc", label: "Close the list" },
+        ],
+      },
+      {
+        title: "Move",
+        rows: [
+          row("dialog.select.prev", "Up"),
+          row("dialog.select.next", "Down"),
+          row("better_sessions.half_page_down", "Half page down"),
+          row("better_sessions.half_page_up", "Half page up"),
+          row("dialog.select.page_up", "Page up"),
+          row("dialog.select.page_down", "Page down"),
+          row("dialog.select.home", "First row"),
+          row("dialog.select.end", "Last row"),
+        ],
+      },
+    ]
+  }
+
+  function openHelp() {
+    setToDelete(undefined)
+    setView({ type: "help", groups: keybindingGroups() })
+  }
 
   const currentProjectName = createMemo(() => {
     const current = currentInfo()
@@ -438,6 +496,17 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
       run: () => cycle(-1),
     },
     {
+      id: "better_sessions.help",
+      title: "Show keybindings",
+      group: "Dialog",
+      bind: keys.help,
+      run: (_input, event) => {
+        // While searching, "?" is part of the query.
+        if (filter() && event && typedCharacter(event) !== undefined) return false
+        openHelp()
+      },
+    },
+    {
       id: "better_sessions.all_projects",
       title: allProjects() ? "Show current directory sessions" : "Show all project sessions",
       group: "Dialog",
@@ -547,12 +616,21 @@ export function InboxDialog(props: { inbox: Inbox; options: Options; start?: Dia
             context.ui.dialog.clear()
           }}
           actions={actions()}
-          footerHints={[
-            { title: allProjects() ? "current directory" : "all projects", label: allProjectsKey(), side: "right" },
-          ]}
+          actionHints={false}
+          footerHints={[{ title: "keybindings", label: helpKey(), side: "left" }]}
           halfPageKeys={halfPageKeys}
           jumpKey={keys.jump}
         />
+      </Match>
+      <Match when={view().type === "help" && (view() as Extract<View, { type: "help" }>)}>
+        {(current) => (
+          <KeybindingsHelp
+            groups={current().groups}
+            helpBind={keys.help}
+            halfPageKeys={halfPageKeys}
+            onClose={() => setView({ type: "list" })}
+          />
+        )}
       </Match>
       <Match when={view().type === "snooze" && (view() as Extract<View, { type: "snooze" }>)}>
         {(current) => <SnoozePicker view={current()} />}

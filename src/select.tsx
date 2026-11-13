@@ -84,7 +84,7 @@ export function toggleJump() {
 }
 
 /** The character a key press types, if any. Modified keys and named keys such as `return` type nothing. */
-function typedCharacter(event: KeyEvent) {
+export function typedCharacter(event: KeyEvent) {
   if (event.ctrl || event.meta || event.super || event.hyper) return undefined
   const sequence = event.sequence
   if (sequence && [...sequence].length === 1 && sequence >= " " && sequence !== "\x7f") return sequence
@@ -114,6 +114,8 @@ export interface SelectProps<T> {
   noMatchView?: JSX.Element
   actions?: SelectAction<T>[]
   footerHints?: SelectHint[]
+  /** Lists the actions in the footer. Off when a help view lists them instead. Default true. */
+  actionHints?: boolean
   bindings?: readonly KeymapCommand[]
   ref?: (ref: SelectRef<T>) => void
   onMove?: (option: SelectOption<T>) => void
@@ -476,7 +478,8 @@ export function Select<T>(props: SelectProps<T>) {
   }
 
   context.keymap.layer(() => {
-    const visible = shownActions()
+    // Hidden actions stay registered but disabled, so their keys can still be looked up (for a help view).
+    const all = props.actions ?? []
     return {
       mode: "modal",
       commands: [
@@ -516,14 +519,15 @@ export function Select<T>(props: SelectProps<T>) {
               },
             ]
           : []),
-        ...visible.map(
+        ...all.map(
           (item): KeymapCommand => ({
             id: item.command,
             // Resolved without a selection so moving through the list does not rebuild the layer.
             title: typeof item.title === "function" ? item.title(undefined) : item.title,
             group: "Dialog",
+            enabled: !item.hidden,
             ...(item.bind ? { bind: item.bind } : {}),
-            run: () => trigger(item),
+            run: () => (item.hidden ? false : trigger(item)),
           }),
         ),
         ...(props.bindings ?? []),
@@ -564,7 +568,7 @@ export function Select<T>(props: SelectProps<T>) {
         { side: "left" as const, action: { title: "type a label to jump" } satisfies FooterAction },
         { side: "right" as const, action: { title: "cancel", key: "esc" } satisfies FooterAction },
       ]
-    const actions = shownActions().flatMap((item) => {
+    const actions = (props.actionHints === false ? [] : shownActions()).flatMap((item) => {
       const label = joinShortcuts(context.keymap.shortcuts(item.command))
       if (!label) return []
       return [
